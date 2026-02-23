@@ -1,17 +1,144 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <title>Vanilla JavaScript App</title>
+  <meta charset="utf-8" />
+  <title>Análisis de materiales: Raman, XPS y reporte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <main>
-    <h1>Vanilla JavaScript App</h1>
-  </main>
-</body>
+<header>
+  <h1>Análisis de materiales: Raman, XPS y reporte</h1>
+  <div class="sub">Raman (perfecto), FTIR por streaming y XPS integrados con informe técnico imprimible</div>
+</header>
 
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="general">Datos generales</button>
+  <button class="tab-btn" data-tab="raman">Raman</button>
+  <button class="tab-btn" data-tab="xps">XPS</button>
+  <button id="printBtn" class="primary right">Generar PDF (informe)</button>
+</nav>
+
+<main>
+  <!-- Datos generales -->
+  <section id="tab-general" class="tab active">
+    <div class="card">
+      <h2>Datos generales del informe</h2>
+      <div class="grid2">
+        <div><label>Informe</label><input id="genInforme" type="text" placeholder="Informe GO-YYYYMMDD" /></div>
+        <div><label>Fecha</label><input id="genFecha" type="date" /></div>
+        <div><label>Celda</label><input id="genCelda" type="text" /></div>
+        <div><label>Reactor</label><input id="genReactor" type="text" /></div>
+        <div><label>Barra de grafito</label><input id="genBarra" type="text" /></div>
+        <div><label>Voltaje máx [V]</label><input id="genVmax" type="number" step="0.01" /></div>
+        <div><label>Corriente máx [A]</label><input id="genImax" type="number" step="0.01" /></div>
+        <div><label>Temperatura máx [°C]</label><input id="genTmax" type="number" step="0.1" /></div>
+        <div><label>Tiempo de exfoliación [min]</label><input id="genTiempo" type="number" step="1" /></div>
+      </div>
+      <div class="row"><button id="saveGeneral" class="primary">Guardar datos generales</button></div>
+      <div class="small mono" id="generalSaved"></div>
+    </div>
+  </section>
+
+  <!-- Raman -->
+  <section id="tab-raman" class="tab">
+    <div class="card">
+      <h2>Entrada y parámetros Raman (JASCO .txt)</h2>
+      <div class="row"><input id="fileInputRaman" type="file" accept=".txt" /></div>
+      <div class="grid2">
+        <div><label>Ventana SG (impar)</label><input id="sgWindow" type="number" min="5" step="2" value="5" /></div>
+        <div><label>Orden SG</label><input id="sgOrder" type="number" min="1" max="5" value="1" /></div>
+        <div><label>Orden baseline</label>
+          <select id="baselineOrder"><option value="2">2</option><option value="3">3</option></select>
+        </div>
+        <div><label>Iter. baseline máx</label><input id="baselineIter" type="number" min="1" value="25" /></div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div>
+          <label>Región DG [cm-1]</label>
+          <div class="row"><input id="dgStart" type="number" value="900" /><input id="dgEnd" type="number" value="1850" /></div>
+        </div>
+        <div>
+          <label>Región 2D [cm-1]</label>
+          <div class="row"><input id="d2Start" type="number" value="2100" /><input id="d2End" type="number" value="3650" /></div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div>
+          <label>Número Lorentzianas DG</label>
+          <select id="numLorentzDG">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div>
+          <label>Número Lorentzianas 2D</label>
+          <select id="numLorentz2D">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="runBtnRaman" class="primary">Procesar Raman</button>
+        <button id="exportBtnRaman" class="ghost">Exportar informe Raman (.txt)</button>
+      </div>
+      <div class="small mono" id="fileMetaRaman"></div>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><h2>Crudo vs suavizado</h2><canvas id="plotRaw"></canvas></div>
+      <div class="card"><h2>Baseline y sustracción</h2><canvas id="plotBaseline"></canvas></div>
+      <div class="card"><h2>Región DG: ajuste y residuos</h2><canvas id="plotDG"></canvas></div>
+      <div class="card"><h2>Región 2D: ajuste y residuos</h2><canvas id="plot2D"></canvas></div>
+      <div class="card"><h2>Métricas Raman</h2><div class="kv mono" id="metricsRaman"></div></div>
+      <div class="card"><h2>Veredictos Raman</h2><div class="kv mono" id="qualityRaman"></div></div>
+    </div>
+  </section>
+
+   <!-- XPS -->
+  <section id="tab-xps" class="tab">
+    <div class="card">
+      <h2>Composición XPS (entrada manual)</h2>
+      <div class="grid2">
+        <div><label>% C</label><input id="xpsC" type="number" step="0.1" value="0" /></div>
+        <div><label>% O</label><input id="xpsO" type="number" step="0.1" value="0" /></div>
+        <div><label>% N</label><input id="xpsN" type="number" step="0.1" value="0" /></div>
+        <div><label>% S</label><input id="xpsS" type="number" step="0.1" value="0" /></div>
+        <div><label>% P</label><input id="xpsOtros" type="number" step="0.1" value="0" /></div>
+      </div>
+      <div class="row">
+        <button id="runBtnXPS" class="primary">Actualizar XPS</button>
+      </div>
+      <div class="small mono" id="xpsMeta"></div>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><h2>Gráfico XPS</h2><canvas id="plotXPS"></canvas></div>
+      <div class="card"><h2>Tabla XPS</h2><div class="kv mono" id="xpsTable"></div></div>
+      <div class="card"><h2>Conclusión XPS</h2><div class="mono" id="xpsConclusion"></div></div>
+    </div>
+  </section>
+</main>
+
+<!-- Sección oculta para impresión del informe -->
+<section id="print-report" class="print-only">
+  <h1>Informe técnico</h1>
+  <div id="printGeneral"></div>
+  <h2>Raman</h2>
+  <div id="printRaman"></div>
+  <h2>XPS</h2>
+  <div id="printXPS"></div>
+  <h2>Conclusión final</h2>
+  <div id="printConclusion"></div>
+</section>
+
+<script src="script.js"></script>
+</body>
 </html>
